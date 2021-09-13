@@ -1,0 +1,11 @@
+.env*
+data/logs/*
+!data/logs/.gitkeep
+data/mysql/*
+!data/mysql/.gitkeep
+
+!.env_example
+
+# Application
+wp
+laravel
