@@ -6,3 +6,68 @@ services:
     container_name: cu_redis
     expose:
       - 6379
+  wordpress:
+    build:
+      context: ./wp
+    container_name: cu_wordpress
+    depends_on:
+      - mysql
+    links:
+      - redis
+    restart: always
+    volumes:
+      - ./config/php/php.conf.ini:/usr/local/etc/php/conf.d/conf.ini
+      - ./wp:/var/www/html
+  mysql:
+    image: mysql:latest
+    container_name: cu_ff
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./config/sql:/etc/mysql/conf.d
+      - ./config/sql/db.sql:/docker-entrypoint-initdb.d/db.sql
+    environment:
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_HOST=%
+    cap_add:
+      - SYS_NICE
+    restart: always
+    ports:
+      - "3307:3306"
+  laravel:
+    build:
+      context: ./laravel
+    container_name: cu_laravel
+    links:
+      - redis
+    depends_on:
+      - mysql
+    restart: always
+    volumes:
+      - ./config/php/php.conf.ini:/usr/local/etc/php/conf.d/conf.ini
+      - ./laravel:/var/www/laravel
+      - /var/www/laravel/vendor
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: cu_mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+  nginx:
+    image: nginx:latest
+    container_name: cu_nginx
+    ports:
+      - "80:80"
+      - "8081:8081"
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+      - ./data/logs/nginx:/var/log/nginx
+      - ./wp:/var/www/html
+      - ./laravel:/var/www/laravel
+    restart: always
+
+networks:
+  default:
+    name: cu-local-futurefunder
